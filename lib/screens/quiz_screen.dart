@@ -92,16 +92,23 @@ class _QuizScreenState extends State<QuizScreen> {
           timeRemaining--;
         });
       } else {
-        _submitAnswer('');
+        // When timer expires, automatically move to next question
+        _goToNextQuestion();
       }
     });
   }
 
-  void _submitAnswer(String answer) {
-    timer?.cancel();
+  void _selectAnswer(String answer) {
+    // Only update the selected answer, don't auto-navigate
     setState(() {
       userAnswers[currentIndex] = answer;
     });
+    print({"Selected Answer": answer});
+  }
+
+  void _goToNextQuestion() {
+    timer?.cancel();
+
     if (currentIndex < totalQuestions - 1) {
       setState(() {
         currentIndex++;
@@ -162,6 +169,29 @@ class _QuizScreenState extends State<QuizScreen> {
     final question = questions[currentIndex];
     final options = shuffledOptions[currentIndex];
     final selectedAnswer = userAnswers[currentIndex];
+
+    // Store the full option text:
+    // void _selectOption(int optionIndex) {
+    //   final question = quizProvider.currentQuestion!;
+    //   final selectedOptionText = question.options[optionIndex];
+    //   quizProvider.answerQuestion(selectedOptionText);
+    // }
+
+    // // Or if you want to keep storing letters, make sure your QuestionModel
+    // // has a method to convert letters back to option text:
+
+    // // Add this method to QuestionModel:
+    // String getOptionByLetter(String letter) {
+    //   if (letter.length != 1 ||
+    //       !RegExp(r'^[A-D]$').hasMatch(letter.toUpperCase())) {
+    //     return letter;
+    //   }
+    //   final index = letter.toUpperCase().codeUnitAt(0) - 65;
+    //   if (index >= 0 && index < options.length) {
+    //     return options[index];
+    //   }
+    //   return letter;
+    // }
 
     return Scaffold(
       backgroundColor: const Color(0xFF6C63FF),
@@ -240,7 +270,8 @@ class _QuizScreenState extends State<QuizScreen> {
                   // Options
                   ...List.generate(options.length, (i) {
                     final opt = options[i];
-                    final isSelected = selectedAnswer == _optionLetter(i);
+                    final optionLetter = _optionLetter(i);
+                    final isSelected = selectedAnswer == optionLetter;
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -253,7 +284,7 @@ class _QuizScreenState extends State<QuizScreen> {
                           borderRadius: BorderRadius.circular(12),
                           onTap: isSubmitting
                               ? null
-                              : () => _submitAnswer(_optionLetter(i)),
+                              : () => _selectAnswer(optionLetter),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               vertical: 16,
@@ -266,7 +297,7 @@ class _QuizScreenState extends State<QuizScreen> {
                                       ? Colors.white
                                       : const Color(0xFF6C63FF),
                                   child: Text(
-                                    _optionLetter(i),
+                                    optionLetter,
                                     style: GoogleFonts.poppins(
                                       color: isSelected
                                           ? const Color(0xFF6C63FF)
@@ -299,28 +330,34 @@ class _QuizScreenState extends State<QuizScreen> {
 
                   // Next/Finish Button
                   if (!isSubmitting)
-                    Align(
-                      alignment: Alignment.centerRight,
+                    SizedBox(
+                      width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6C63FF),
+                          backgroundColor: selectedAnswer.isNotEmpty
+                              ? Colors.white
+                              : Colors.white.withOpacity(0.3),
+                          foregroundColor: const Color(0xFF6C63FF),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 32,
-                            vertical: 14,
+                            vertical: 16,
                           ),
+                          elevation: selectedAnswer.isNotEmpty ? 4 : 0,
                         ),
                         onPressed: selectedAnswer.isNotEmpty
-                            ? () => _submitAnswer(selectedAnswer)
+                            ? _goToNextQuestion
                             : null,
                         child: Text(
                           currentIndex == totalQuestions - 1
-                              ? 'Finish'
-                              : 'Next',
+                              ? 'Finish Quiz'
+                              : 'Next Question',
                           style: GoogleFonts.poppins(
-                            color: Colors.white,
+                            color: selectedAnswer.isNotEmpty
+                                ? const Color(0xFF6C63FF)
+                                : const Color(0xFF6C63FF).withOpacity(0.5),
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
@@ -329,7 +366,19 @@ class _QuizScreenState extends State<QuizScreen> {
                     ),
                   if (isSubmitting)
                     Center(
-                      child: CircularProgressIndicator(color: Colors.white),
+                      child: Column(
+                        children: [
+                          CircularProgressIndicator(color: Colors.white),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Submitting your answers...',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                 ],
               ),
@@ -345,6 +394,3 @@ class _QuizScreenState extends State<QuizScreen> {
     return String.fromCharCode(65 + index);
   }
 }
-
-// Timer Widget
-// filepath: /Users/user/Documents/Developement/Mobile Apps/Projects/quiz_app/lib/widgets/timer_widget.dart

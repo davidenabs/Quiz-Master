@@ -18,42 +18,46 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  List<CourseModel> _courses = [];
+  bool _isLoading = true;
+  String? _error;
+
   @override
   void initState() {
     super.initState();
 
-    // Schedule after the first build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final quizProvider = context.read<QuizProvider>();
-      final leaderboardProvider = context.read<LeaderboardProvider>();
+    final quizProvider = context.read<QuizProvider>();
+    final leaderboardProvider = context.read<LeaderboardProvider>();
 
-      if (quizProvider.courses.isEmpty && !quizProvider.isLoading) {
-        quizProvider.loadCourses();
-      }
+    quizProvider.loadCourses().then((data) {
+      setState(() {
+        _courses = data;
+        _isLoading = false;
+        _error = quizProvider.error;
+      });
+    });
 
-      if (leaderboardProvider.globalLeaderboard.isEmpty &&
-          !leaderboardProvider.isLoading) {
-        leaderboardProvider.loadGlobalLeaderboard();
-      }
+    // leaderboardProvider.loadGlobalLeaderboard();
+  }
+
+  Future<void> _refresh() async {
+    final quizProvider = context.read<QuizProvider>();
+    final leaderboardProvider = context.read<LeaderboardProvider>();
+
+    final courses = await quizProvider.loadCourses();
+    await leaderboardProvider.loadGlobalLeaderboard();
+
+    setState(() {
+      _courses = courses;
+      _error = quizProvider.error;
+      _isLoading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    final quizProvider = context.watch<QuizProvider>();
     final leaderboardProvider = context.watch<LeaderboardProvider>();
-
-    // Load courses if not loaded
-    // if (quizProvider.courses.isEmpty && !quizProvider.isLoading) {
-    //   quizProvider.loadCourses();
-    // }
-
-    // // Load leaderboard if not loaded
-    // if (leaderboardProvider.globalLeaderboard.isEmpty &&
-    //     !leaderboardProvider.isLoading) {
-    //   leaderboardProvider.loadGlobalLeaderboard();
-    // }
 
     return Scaffold(
       backgroundColor: const Color(0xFF6C63FF),
@@ -82,24 +86,19 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Logout',
             onPressed: () async {
               await authProvider.signOut();
-              // Optionally, navigate to login screen
             },
           ),
         ],
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () async {
-            await quizProvider.loadCourses();
-            await leaderboardProvider.loadGlobalLeaderboard();
-          },
+          onRefresh: _refresh,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Welcome
                 Text(
                   'Welcome, ${authProvider.user?.username ?? 'User'} 👋',
                   style: GoogleFonts.poppins(
@@ -129,18 +128,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                if (quizProvider.isLoading)
-                  const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  )
-                else if (quizProvider.error != null)
+                if (_isLoading)
+                  const Center(child: CircularProgressIndicator(color: Colors.white))
+                else if (_error != null)
                   Center(
                     child: Text(
-                      quizProvider.error!,
+                      _error!,
                       style: GoogleFonts.poppins(color: Colors.redAccent),
                     ),
                   )
-                else if (quizProvider.courses.isEmpty)
+                else if (_courses.isEmpty)
                   Center(
                     child: Text(
                       'No courses available.',
@@ -151,10 +148,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: quizProvider.courses.length,
+                    itemCount: _courses.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
-                      final course = quizProvider.courses[index];
+                      final course = _courses[index];
                       return GestureDetector(
                         onTap: () {
                           Navigator.of(context).push(
@@ -171,7 +168,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 const SizedBox(height: 32),
 
-                // Leaderboard Preview
                 Text(
                   'Top Learners',
                   style: GoogleFonts.poppins(
@@ -186,43 +182,43 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: CircularProgressIndicator(color: Colors.white),
                       )
                     : leaderboardProvider.globalLeaderboard.isEmpty
-                    ? Text(
-                        'No leaderboard data.',
-                        style: GoogleFonts.poppins(color: Colors.white70),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: leaderboardProvider.getTopUsers(3).length,
-                        itemBuilder: (context, index) {
-                          final item = leaderboardProvider.getTopUsers(
-                            3,
-                          )[index];
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.white,
-                              child: Text(
-                                '${item.rank}',
-                                style: GoogleFonts.poppins(
-                                  color: const Color(0xFF6C63FF),
-                                  fontWeight: FontWeight.bold,
+                        ? Text(
+                            'No leaderboard data.',
+                            style: GoogleFonts.poppins(color: Colors.white70),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount:
+                                leaderboardProvider.getTopUsers(3).length,
+                            itemBuilder: (context, index) {
+                              final item = leaderboardProvider.getTopUsers(3)[index];
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: Colors.white,
+                                  child: Text(
+                                    '${item.rank}',
+                                    style: GoogleFonts.poppins(
+                                      color: const Color(0xFF6C63FF),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                            title: Text(
-                              item.username,
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            trailing: Text(
-                              '${item.totalPoints} pts',
-                              style: GoogleFonts.poppins(color: Colors.white70),
-                            ),
-                          );
-                        },
-                      ),
+                                title: Text(
+                                  item.username,
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                trailing: Text(
+                                  '${item.totalPoints} pts',
+                                  style:
+                                      GoogleFonts.poppins(color: Colors.white70),
+                                ),
+                              );
+                            },
+                          ),
               ],
             ),
           ),

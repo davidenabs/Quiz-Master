@@ -34,14 +34,22 @@ class QuizProvider extends ChangeNotifier {
       : (_currentQuestionIndex + 1) / _questions.length;
 
   // Load courses
-  Future<void> loadCourses() async {
+  bool _hasLoadedCourses = false;
+
+  Future<List<CourseModel>> loadCourses() async {
+    // if (_hasLoadedCourses) return;
+
     _setLoading(true);
     try {
       final coursesData = await SupabaseService.getCourses();
       _courses = coursesData.map((data) => CourseModel.fromJson(data)).toList();
-      _clearError();
+      _hasLoadedCourses = true;
+      return _courses;
+      // _clearError();
+      // notifyListeners();
     } catch (e) {
       _setError(e.toString());
+      return [];
     } finally {
       _setLoading(false);
     }

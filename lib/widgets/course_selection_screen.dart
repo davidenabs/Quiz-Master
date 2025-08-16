@@ -100,10 +100,7 @@ class CourseSelectionScreen extends StatelessWidget {
                                 Icons.star_border,
                                 color: Color(0xFF6C63FF),
                               ),
-                              title: Text(
-                                'Easy (15 questions)',
-                                style: GoogleFonts.poppins(),
-                              ),
+                              title: Text('Easy', style: GoogleFonts.poppins()),
                               onTap: () =>
                                   Navigator.of(context).pop(Difficulty.easy),
                             ),
@@ -113,7 +110,7 @@ class CourseSelectionScreen extends StatelessWidget {
                                 color: Color(0xFF6C63FF),
                               ),
                               title: Text(
-                                'Intermediate (25 questions)',
+                                'Intermediate',
                                 style: GoogleFonts.poppins(),
                               ),
                               onTap: () => Navigator.of(
@@ -126,7 +123,7 @@ class CourseSelectionScreen extends StatelessWidget {
                                 color: Color(0xFF6C63FF),
                               ),
                               title: Text(
-                                'Advanced (50 questions)',
+                                'Advanced',
                                 style: GoogleFonts.poppins(),
                               ),
                               onTap: () => Navigator.of(

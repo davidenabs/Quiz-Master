@@ -88,13 +88,59 @@ class QuizService {
     );
   }
 
-  static int calculateScore(List<String> userAnswers, List<QuestionModel> questions) {
-    int correctCount = 0;
+  // static int calculateScore(List<String> userAnswers, List<QuestionModel> questions) {
+  //   int correctCount = 0;
+  //   for (int i = 0; i < userAnswers.length && i < questions.length; i++) {
+  //     if (userAnswers[i] == questions[i].correctAnswer) {
+  //       correctCount++;
+  //     }
+  //   }
+  //   return correctCount;
+  // }
+
+  // Add this method to your QuizService class:
+
+  static int calculateScore(
+    List<String> userAnswers,
+    List<QuestionModel> questions,
+  ) {
+    int score = 0;
+
     for (int i = 0; i < userAnswers.length && i < questions.length; i++) {
-      if (userAnswers[i] == questions[i].correctAnswer) {
-        correctCount++;
+      final userAnswer = userAnswers[i];
+      final question = questions[i];
+      final correctAnswer = question.correctAnswer;
+
+      // Convert user's letter answer (A, B, C, D) to option text
+      bool isCorrect = false;
+
+      if (userAnswer.length == 1 &&
+          RegExp(r'^[A-D]$').hasMatch(userAnswer.toUpperCase())) {
+        final optionIndex =
+            userAnswer.toUpperCase().codeUnitAt(0) - 65; // A=0, B=1, C=2, D=3
+        if (optionIndex >= 0 && optionIndex < question.options.length) {
+          final userOptionText = question.options[optionIndex];
+          isCorrect =
+              userOptionText.toLowerCase().trim() ==
+              correctAnswer.toLowerCase().trim();
+        }
+      } else {
+        // Direct comparison for non-letter answers
+        isCorrect =
+            userAnswer.toLowerCase().trim() ==
+            correctAnswer.toLowerCase().trim();
       }
+
+      if (isCorrect) {
+        score++;
+      }
+
+      // Debug print
+      print(
+        'Question ${i + 1}: User: $userAnswer, Correct: $correctAnswer, Match: $isCorrect',
+      );
     }
-    return correctCount;
+
+    return score;
   }
 }

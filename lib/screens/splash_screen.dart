@@ -32,39 +32,54 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
+    );
 
-    _opacityAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
-    ));
+    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
+      ),
+    );
 
     _animationController.forward();
   }
 
   Future<void> _checkAuthStatus() async {
     await Future.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
 
-    if (mounted) {
-      final authProvider = context.read<AuthProvider>();
-      final targetScreen = authProvider.isAuthenticated
-          ? const HomeScreen()
-          : const LoginScreen();
+    final authProvider = context.read<AuthProvider>();
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => targetScreen),
-      );
+    /// Wait if user profile is still being loaded
+    if (authProvider.user == null && authProvider.isAuthenticated) {
+      await Future.delayed(const Duration(seconds: 1));
     }
+
+    final targetScreen = authProvider.isAuthenticated
+        ? const HomeScreen()
+        : const LoginScreen();
+
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => targetScreen));
   }
+
+  // Future<void> _checkAuthStatus() async {
+  //   await Future.delayed(const Duration(seconds: 3));
+
+  //   if (mounted) {
+  //     final authProvider = context.read<AuthProvider>();
+  //     final targetScreen = authProvider.isAuthenticated
+  //         ? const HomeScreen()
+  //         : const LoginScreen();
+
+  //     Navigator.of(context).pushReplacement(
+  //       MaterialPageRoute(builder: (_) => targetScreen),
+  //     );
+  //   }
+  // }
 
   @override
   void dispose() {

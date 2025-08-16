@@ -23,10 +23,34 @@ class ResultsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int correctCount = 0; //score.correctAnswers;
+    final int correctCount = score!.score;
     final int total = questions.length;
     final double percent = correctCount / total;
     final bool passed = percent >= 0.7;
+    print({"userAnswers": userAnswers});
+
+    // Add this helper method to your ResultsScreen class:
+    bool _isAnswerCorrect(
+      QuestionModel question,
+      String userAnswer,
+      String correctAnswer,
+    ) {
+      // If userAnswer is a letter (A, B, C, D), convert to option text
+      if (userAnswer.length == 1 &&
+          RegExp(r'^[A-D]$').hasMatch(userAnswer.toUpperCase())) {
+        final optionIndex =
+            userAnswer.toUpperCase().codeUnitAt(0) - 65; // A=0, B=1, C=2, D=3
+        if (optionIndex >= 0 && optionIndex < question.options.length) {
+          final userOptionText = question.options[optionIndex];
+          return userOptionText.toLowerCase().trim() ==
+              correctAnswer.toLowerCase().trim();
+        }
+      }
+
+      // Fallback: direct comparison
+      return userAnswer.toLowerCase().trim() ==
+          correctAnswer.toLowerCase().trim();
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFF6C63FF),
@@ -128,8 +152,13 @@ class ResultsScreen extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final q = questions[index];
                   final userAns = userAnswers[index];
-                  final correctAns = q.correctOption;
-                  final isCorrect = userAns == correctAns;
+                  final correctAns = q.correctAnswer;
+                 final isCorrect = _isAnswerCorrect(q, userAns, correctAns);
+                  print({
+                    "correctAns": correctAns,
+                    "userAns": userAns,
+                    "isCorrect": isCorrect,
+                  });
                   return Card(
                     color: isCorrect ? Colors.white : Colors.red[50],
                     elevation: 2,
@@ -157,15 +186,17 @@ class ResultsScreen extends StatelessWidget {
                                   color: Colors.black87,
                                 ),
                               ),
-                              Text(
-                                userAns.isEmpty
-                                    ? 'No answer'
-                                    : _optionText(q, userAns),
-                                style: GoogleFonts.poppins(
-                                  color: isCorrect
-                                      ? Colors.green
-                                      : Colors.redAccent,
-                                  fontWeight: FontWeight.bold,
+                              Expanded(
+                                child: Text(
+                                  userAns.isEmpty
+                                      ? 'No answer'
+                                      : _optionText(q, userAns),
+                                  style: GoogleFonts.poppins(
+                                    color: isCorrect
+                                        ? Colors.green
+                                        : Colors.redAccent,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -180,11 +211,13 @@ class ResultsScreen extends StatelessWidget {
                                     color: Colors.black87,
                                   ),
                                 ),
-                                Text(
-                                  _optionText(q, correctAns),
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.bold,
+                                Expanded(
+                                  child: Text(
+                                    _optionText(q, correctAns),
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ],
