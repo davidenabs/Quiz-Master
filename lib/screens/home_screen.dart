@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:quiz_app/screens/splash_screen.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/quiz_provider.dart';
@@ -86,6 +87,16 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Logout',
             onPressed: () async {
               await authProvider.signOut();
+              if (mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const SplashScreen()),
+                  (route) => false,
+                );
+                // show snackbar
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('You have been signed out.')),
+                );
+              }
             },
           ),
         ],
@@ -129,7 +140,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
 
                 if (_isLoading)
-                  const Center(child: CircularProgressIndicator(color: Colors.white))
+                  const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  )
                 else if (_error != null)
                   Center(
                     child: Text(
@@ -182,43 +195,43 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: CircularProgressIndicator(color: Colors.white),
                       )
                     : leaderboardProvider.globalLeaderboard.isEmpty
-                        ? Text(
-                            'No leaderboard data.',
-                            style: GoogleFonts.poppins(color: Colors.white70),
-                          )
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount:
-                                leaderboardProvider.getTopUsers(3).length,
-                            itemBuilder: (context, index) {
-                              final item = leaderboardProvider.getTopUsers(3)[index];
-                              return ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: Colors.white,
-                                  child: Text(
-                                    '${item.rank}',
-                                    style: GoogleFonts.poppins(
-                                      color: const Color(0xFF6C63FF),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                    ? Text(
+                        'No leaderboard data.',
+                        style: GoogleFonts.poppins(color: Colors.white70),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: leaderboardProvider.getTopUsers(3).length,
+                        itemBuilder: (context, index) {
+                          final item = leaderboardProvider.getTopUsers(
+                            3,
+                          )[index];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.white,
+                              child: Text(
+                                '${item.rank}',
+                                style: GoogleFonts.poppins(
+                                  color: const Color(0xFF6C63FF),
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                title: Text(
-                                  item.username,
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                trailing: Text(
-                                  '${item.totalPoints} pts',
-                                  style:
-                                      GoogleFonts.poppins(color: Colors.white70),
-                                ),
-                              );
-                            },
-                          ),
+                              ),
+                            ),
+                            title: Text(
+                              item.username,
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            trailing: Text(
+                              '${item.totalPoints} pts',
+                              style: GoogleFonts.poppins(color: Colors.white70),
+                            ),
+                          );
+                        },
+                      ),
               ],
             ),
           ),

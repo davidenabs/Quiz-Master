@@ -130,14 +130,27 @@ class QuizProvider extends ChangeNotifier {
     required String courseId,
     required Difficulty difficulty,
   }) async {
-    final score = QuizService.calculateScore(_userAnswers, _questions);
-
+    // Calculate score using the same logic as results screen
+    int correctCount = 0;
+    for (int i = 0; i < _userAnswers.length && i < _questions.length; i++) {
+      final userAnswer = _userAnswers[i];
+      final correctAnswer = _questions[i].correctAnswer;
+      if (userAnswer.toUpperCase() == correctAnswer.toUpperCase()) {
+        correctCount++;
+      }
+    }
+    print({
+      'courseId': courseId,
+      'difficulty': difficulty,
+      'userAnswers': _userAnswers,
+      'score': correctCount,
+    });
     try {
       _lastScore = await QuizService.saveQuizResult(
         userId: userId,
         courseId: courseId,
         difficulty: difficulty,
-        score: score,
+        score: correctCount,
         totalQuestions: _questions.length,
       );
       notifyListeners();

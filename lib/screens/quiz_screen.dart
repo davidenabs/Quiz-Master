@@ -35,7 +35,7 @@ class _QuizScreenState extends State<QuizScreen> {
   int timerSeconds = 30;
   int timeRemaining = 30;
   Timer? timer;
-  List<List<String>> shuffledOptions = [];
+  // Removed shuffling to fix scoring issues
 
   @override
   void initState() {
@@ -68,11 +68,8 @@ class _QuizScreenState extends State<QuizScreen> {
       return;
     }
 
-    // Shuffle questions and options for replayability
+    // Shuffle only questions, keep options in original order for correct scoring
     questions.shuffle(Random());
-    shuffledOptions = questions
-        .map((q) => List<String>.from(q.options)..shuffle(Random()))
-        .toList();
 
     totalQuestions = questions.length;
     userAnswers = List.filled(totalQuestions, '');
@@ -99,11 +96,14 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void _selectAnswer(String answer) {
-    // Only update the selected answer, don't auto-navigate
+    // Store the display letter for UI, but we'll convert to original when scoring
     setState(() {
-      userAnswers[currentIndex] = answer;
+      userAnswers[currentIndex] = answer; // Store the display letter
     });
-    print({"Selected Answer": answer});
+    print({
+      "Selected Answer (Display)": answer,
+      "Original Answer": '',
+    });
   }
 
   void _goToNextQuestion() {
@@ -124,11 +124,11 @@ class _QuizScreenState extends State<QuizScreen> {
       isSubmitting = true;
     });
     final userId = authProvider.user?.id ?? '';
-    await quizProvider.saveQuizResults(
-      userId: userId,
-      courseId: widget.course.id,
-      difficulty: widget.difficulty,
-    );
+    // await quizProvider.saveQuizResults(
+    //   userId: userId,
+    //   courseId: widget.course.id,
+    //   difficulty: widget.difficulty,
+    // );
     if (mounted) {
       print({
         'courseId': widget.course.id,
@@ -143,7 +143,8 @@ class _QuizScreenState extends State<QuizScreen> {
             difficulty: widget.difficulty,
             questions: questions,
             userAnswers: userAnswers,
-            score: quizProvider.lastScore!,
+            // score: quizProvider.lastScore!,
+            userId: userId,
           ),
         ),
       );
@@ -167,7 +168,7 @@ class _QuizScreenState extends State<QuizScreen> {
     }
 
     final question = questions[currentIndex];
-    final options = shuffledOptions[currentIndex];
+    final options = question.options;
     final selectedAnswer = userAnswers[currentIndex];
 
     // Store the full option text:
@@ -225,7 +226,7 @@ class _QuizScreenState extends State<QuizScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            Padding(
+            SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,53 +281,66 @@ class _QuizScreenState extends State<QuizScreen> {
                             ? const Color(0xFF6C63FF)
                             : Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: isSubmitting
-                              ? null
-                              : () => _selectAnswer(optionLetter),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 16,
-                            ),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: isSelected
-                                      ? Colors.white
-                                      : const Color(0xFF6C63FF),
-                                  child: Text(
-                                    optionLetter,
-                                    style: GoogleFonts.poppins(
-                                      color: isSelected
-                                          ? const Color(0xFF6C63FF)
-                                          : Colors.white,
-                                      fontWeight: FontWeight.bold,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: isSelected
+                                ? Border.all(color: Colors.white, width: 2)
+                                : Border.all(
+                                    color: const Color(
+                                      0xFF6C63FF,
+                                    ).withOpacity(0.2),
+                                    width: 1,
+                                  ),
+                          ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: isSubmitting
+                                ? null
+                                : () => _selectAnswer(optionLetter),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 16,
+                                horizontal: 16,
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: isSelected
+                                        ? Colors.white
+                                        : const Color(0xFF6C63FF),
+                                    child: Text(
+                                      optionLetter,
+                                      style: GoogleFonts.poppins(
+                                        color: isSelected
+                                            ? const Color(0xFF6C63FF)
+                                            : Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Text(
-                                    opt,
-                                    style: GoogleFonts.poppins(
-                                      color: isSelected
-                                          ? Colors.white
-                                          : const Color(0xFF2D3748),
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 16,
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Text(
+                                      opt,
+                                      style: GoogleFonts.poppins(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : const Color(0xFF2D3748),
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 16,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
                     );
                   }),
-                  const Spacer(),
+                  const SizedBox(height: 32),
 
                   // Next/Finish Button
                   if (!isSubmitting)
@@ -380,6 +394,7 @@ class _QuizScreenState extends State<QuizScreen> {
                         ],
                       ),
                     ),
+                  const SizedBox(height: 32), // Extra space at bottom
                 ],
               ),
             ),

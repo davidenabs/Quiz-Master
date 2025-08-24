@@ -50,6 +50,17 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     final authProvider = context.watch<AuthProvider>();
     final quizProvider = context.watch<QuizProvider>();
     final user = authProvider.user;
+    
+    // Calculate total points from leaderboard data if user exists
+    dynamic totalPoints = user?.totalPoints ?? 0;
+    if (user != null && leaderboardProvider.globalLeaderboard.isNotEmpty) {
+      final userLeaderboardItem = leaderboardProvider.globalLeaderboard
+          .where((item) => item.username == user.username)
+          .firstOrNull;
+      if (userLeaderboardItem != null) {
+        totalPoints = userLeaderboardItem.totalPoints;
+      }
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFF6C63FF),
@@ -119,7 +130,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Total Points: ${user.totalPoints}',
+                            'Total Points: $totalPoints',
                             style: GoogleFonts.poppins(
                               fontSize: 16,
                               color: Colors.black87,

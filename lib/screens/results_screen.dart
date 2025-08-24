@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:quiz_app/services/quiz_service.dart';
 import '../models/course_model.dart';
 import '../models/question_model.dart';
 import '../models/score_model.dart';
@@ -10,24 +11,60 @@ class ResultsScreen extends StatelessWidget {
   final Difficulty difficulty;
   final List<QuestionModel> questions;
   final List<String> userAnswers;
-  final ScoreModel? score;
+  // final ScoreModel? score;
 
+  final String userId;
   const ResultsScreen({
     super.key,
     required this.course,
     required this.difficulty,
     required this.questions,
     required this.userAnswers,
-    this.score,
+    // this.score,
+    required this.userId,
   });
+
+  Future<void> _saveQuizResult(
+    int correctCount,
+    String userId,
+    String courseId,
+    Difficulty difficulty,
+  ) async {
+    try {
+      await QuizService.saveQuizResult(
+        userId: userId,
+        courseId: course.id,
+        difficulty: difficulty,
+        score: correctCount,
+        totalQuestions: questions.length,
+      );
+    } catch (e) {
+      print(e.toString());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final int correctCount = score!.score;
+    // Calculate correct count using the same logic as QuizProvider
+    int correctCount = 0;
+    for (int i = 0; i < userAnswers.length && i < questions.length; i++) {
+      final userAnswer = userAnswers[i];
+      final correctAnswer = questions[i].correctAnswer;
+      if (userAnswer.toUpperCase() == correctAnswer.toUpperCase()) {
+        correctCount++;
+      }
+    }
+
     final int total = questions.length;
     final double percent = correctCount / total;
     final bool passed = percent >= 0.7;
-    print({"userAnswers": userAnswers});
+    print({
+      "userAnswers": userAnswers,
+      "actualCorrectCount": correctCount,
+      "scoreFromDB": "score?.score",
+    });
+
+    _saveQuizResult(correctCount, userId, course.id, difficulty);
 
     // Add this helper method to your ResultsScreen class:
     bool _isAnswerCorrect(
@@ -35,21 +72,8 @@ class ResultsScreen extends StatelessWidget {
       String userAnswer,
       String correctAnswer,
     ) {
-      // If userAnswer is a letter (A, B, C, D), convert to option text
-      if (userAnswer.length == 1 &&
-          RegExp(r'^[A-D]$').hasMatch(userAnswer.toUpperCase())) {
-        final optionIndex =
-            userAnswer.toUpperCase().codeUnitAt(0) - 65; // A=0, B=1, C=2, D=3
-        if (optionIndex >= 0 && optionIndex < question.options.length) {
-          final userOptionText = question.options[optionIndex];
-          return userOptionText.toLowerCase().trim() ==
-              correctAnswer.toLowerCase().trim();
-        }
-      }
-
-      // Fallback: direct comparison
-      return userAnswer.toLowerCase().trim() ==
-          correctAnswer.toLowerCase().trim();
+      // Direct letter comparison (A, B, C, D)
+      return userAnswer.toUpperCase() == correctAnswer.toUpperCase();
     }
 
     return Scaffold(
@@ -153,7 +177,7 @@ class ResultsScreen extends StatelessWidget {
                   final q = questions[index];
                   final userAns = userAnswers[index];
                   final correctAns = q.correctAnswer;
-                 final isCorrect = _isAnswerCorrect(q, userAns, correctAns);
+                  final isCorrect = _isAnswerCorrect(q, userAns, correctAns);
                   print({
                     "correctAns": correctAns,
                     "userAns": userAns,
